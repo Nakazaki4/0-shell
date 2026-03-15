@@ -39,7 +39,7 @@ fn main() {
                 let tokenized_command = tokenize(trimmed_command); // tokenization
                 println!("{:?}", tokenized_command);
                 let command_tree = parse(tokenized_command);
-                execute(command_tree);
+                execute(command_tree.unwrap());
             }
             Err(error) => {
                 eprintln!("Error reading input: {}", error);
