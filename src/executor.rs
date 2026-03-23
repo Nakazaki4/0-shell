@@ -1,7 +1,11 @@
-use nix::{libc::fork, sys::wait::waitpid, unistd::ForkResult};
+use nix::fcntl::{OFlag, open};
+use nix::sys::stat::Mode;
+use nix::{
+    sys::wait::waitpid,
+    unistd::{ForkResult, close, dup2, fork}
+};
 
 use crate::parser::AstNode;
-
 
 pub fn execute(node: AstNode) -> Result<(), String> {
     match node {
@@ -14,18 +18,32 @@ pub fn execute(node: AstNode) -> Result<(), String> {
             command,
             file,
             direction,
-        } => {
-            execute(*command)?;
-            match unsafe { fork() } {
-                Ok(ForkResult::Parent { child }) => {
-                    let _ = waitpid(child, None);
-                    Ok(())
-                }
-                Ok(ForkResult::Child) => {
-
-                }
+        } => match unsafe { fork() } {
+            Ok(ForkResult::Parent { child }) => {
+                let _ = waitpid(child, None);
+                Ok(())
             }
-        }
+            Ok(ForkResult::Child) => {
+                let oflags = OFlag::O_CREAT | OFlag::O_WRONLY | OFlag::O_TRUNC;
+                let mode = Mode::S_IRUSR | Mode::S_IWUSR | Mode::S_IRGRP | Mode::S_IROTH;
+
+                let file_fd = open(file.as_str(), oflags, mode)
+                    .map_err(|e| format!("Could not open file: {}", e))
+                    .unwrap();
+
+                dup2(file_fd, 1).expect("Failed to redirect stdout");
+
+                close(file_fd).expect("Failed to close file descriptor");
+
+                if let Err(e) = execute(*command) {
+                    eprintln!("Error: {}", e);
+                    std::process::exit(1);
+                }
+
+                std::process::exit(0);
+            }
+            Err(e) => Err(format!("Fork failed: {}", e)),
+        },
         AstNode::Pipe { left, right } => {
             execute(*left)?;
             execute(*right)
