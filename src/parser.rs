@@ -44,16 +44,25 @@ pub fn parse(tokens: Vec<String>) -> Result<AstNode, String> {
                 left: Box::new(parse(left_tokens.to_vec())?),
                 right: Box::new(parse(right_tokens.to_vec())?),
             }),
-            ">" => Ok(AstNode::Redirect {
+            ">" => {
+                if right_tokens.len() < 2 {
+                    return Err("bash: syntax error near unexpected token `newline'".to_string());
+                }
+                Ok(AstNode::Redirect {
+                    command: Box::new(parse(left_tokens.to_vec())?),
+                    file: right_tokens[1].clone(),
+                    direction: Direction::Out,
+                })
+            }
+            "<" => {
+                if right_tokens.len() < 2 {
+                    return Err("bash: syntax error near unexpected token `newline'".to_string());
+                }
+                Ok(AstNode::Redirect {
                 command: Box::new(parse(left_tokens.to_vec())?),
-                file: right_tokens.concat(),
-                direction: Direction::Out,
-            }),
-            "<" => Ok(AstNode::Redirect {
-                command: Box::new(parse(right_tokens.to_vec())?),
-                file: left_tokens.concat(),
+                file: right_tokens[1].clone(),
                 direction: Direction::In,
-            }),
+            })},
             "|" => Ok(AstNode::Pipe {
                 left: Box::new(parse(left_tokens.to_vec())?),
                 right: Box::new(parse(right_tokens.to_vec())?),

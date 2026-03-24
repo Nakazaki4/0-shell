@@ -1,7 +1,8 @@
 // Lexer -> Parser -> Executor
+mod builtins;
+mod executor;
 mod lexer;
 mod parser;
-mod executor;
 
 use lexer::tokenize;
 use parser::parse;
@@ -37,7 +38,6 @@ fn main() {
             Ok(_) => {
                 let trimmed_command = input.trim();
                 let tokenized_command = tokenize(trimmed_command); // tokenization
-                println!("{:?}", tokenized_command);
                 let command_tree = parse(tokenized_command);
                 execute(command_tree.unwrap());
             }
