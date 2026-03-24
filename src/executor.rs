@@ -78,10 +78,11 @@ pub fn execute(node: AstNode) -> Result<(), String> {
 fn execute_simple_command(command: &String, args: &Vec<String>) -> Result<(), String> {
     match command.as_str() {
         "cat" => concatenate(args),
+        "cd" => change_directory(args),
         _ => {
             eprintln!("{}: Command not found", command);
             Ok(())
-        } // "cd" => change_directory(),
+        },
           // "cp" => copy(),
           // "echo" => echo(),
           // "ls" => list(),

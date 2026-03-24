@@ -19,13 +19,16 @@ pub fn concatenate(args: &Vec<String>) -> Result<(), String> {
             Ok(mut file) => {
                 let mut stdout = io::stdout();
                 if let Err(e) = io::copy(&mut file, &mut stdout) {
-                    eprintln!("cat: {}: {}", filename, e);
+                    // Return the error immediately if reading/writing fails
+                    return Err(format!("cat: {}: {}", filename, e));
                 }
             }
             Err(e) => {
-                eprintln!("cat: {}: {}", filename, e);
+                // Return the error immediately if the file doesn't exist
+                return Err(format!("cat: {}: {}", filename, e));
             }
         }
     }
+    
     Ok(())
 }
