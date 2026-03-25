@@ -79,11 +79,11 @@ fn execute_simple_command(command: &String, args: &Vec<String>) -> Result<(), St
     match command.as_str() {
         "cat" => concatenate(args),
         "cd" => change_directory(args),
+        "cp" => copy(args),
         _ => {
             eprintln!("{}: Command not found", command);
             Ok(())
         },
-          // "cp" => copy(),
           // "echo" => echo(),
           // "ls" => list(),
           // "mkdir" => make_directory(),

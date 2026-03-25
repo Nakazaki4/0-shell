@@ -48,8 +48,5 @@ fn main() {
                 eprintln!("Error reading input: {}", error);
             }
         }
-
-        // show the current directory ($ ~/Desktop/)
-        // pass the user input to the lexer
     }
 }
