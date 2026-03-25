@@ -81,15 +81,15 @@ fn execute_simple_command(command: &String, args: &Vec<String>) -> Result<(), St
         "cd" => change_directory(args),
         "cp" => copy(args),
         "echo" => echo(args),
+        "exit" => exit(args),
+        // "ls" => list(),
+        "mkdir" => make_directory(args),
+        // "mv" => movee(),
+        // "pwd" => print_working_dir(),
+        // "rm" => remove(),
         _ => {
             eprintln!("{}: Command not found", command);
             Ok(())
         }
-        // "ls" => list(),
-        // "mkdir" => make_directory(),
-        // "exit" => exit(),
-        // "mv" => movee(),
-        // "pwd" => print_working_dir(),
-        // "rm" => remove(),
     }
 }
