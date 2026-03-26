@@ -35,7 +35,12 @@ pub fn copy(args: &Vec<String>) -> Result<(), String> {
         };
 
         if let Err(e) = fs::copy(&source_path, &destination) {
-            eprintln!("cp: cannot create regular file '{}': {}", target_str, e);
+            let err_msg = e.to_string();
+            let clean_err = err_msg.split(" (os error)").next().unwrap_or(&err_msg);
+            eprintln!(
+                "cp: cannot create regular file '{}': {}",
+                target_str, clean_err
+            );
         }
     }
 

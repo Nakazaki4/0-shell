@@ -1,4 +1,4 @@
-use std::{fs};
+use std::fs;
 
 pub fn make_directory(args: &Vec<String>) -> Result<(), String> {
     if args.is_empty() {
@@ -7,7 +7,11 @@ pub fn make_directory(args: &Vec<String>) -> Result<(), String> {
 
     for dir_name in args {
         if let Err(e) = fs::create_dir(dir_name) {
-            eprintln!("mkdir: cannot create directory '{}': {}", dir_name, e.to_string());
+            eprintln!(
+                "mkdir: cannot create directory '{}': {}",
+                dir_name,
+                e.to_string()
+            );
         }
     }
     Ok(())

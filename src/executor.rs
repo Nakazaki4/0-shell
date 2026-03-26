@@ -84,7 +84,7 @@ fn execute_simple_command(command: &String, args: &Vec<String>) -> Result<(), St
         "exit" => exit(args),
         // "ls" => list(),
         "mkdir" => make_directory(args),
-        // "mv" => movee(),
+        "mv" => movee(args),
         // "pwd" => print_working_dir(),
         // "rm" => remove(),
         _ => {
