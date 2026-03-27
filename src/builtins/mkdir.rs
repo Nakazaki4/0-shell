@@ -7,10 +7,11 @@ pub fn make_directory(args: &Vec<String>) -> Result<(), String> {
 
     for dir_name in args {
         if let Err(e) = fs::create_dir(dir_name) {
+            let err_msg = e.to_string();
+            let clean_err = err_msg.split(" (os error)").next().unwrap_or(&err_msg);
             eprintln!(
                 "mkdir: cannot create directory '{}': {}",
-                dir_name,
-                e.to_string()
+                dir_name, clean_err
             );
         }
     }

@@ -46,7 +46,7 @@ pub fn movee(args: &Vec<String>) -> Result<(), String> {
             target_path.to_path_buf()
         };
 
-        if let Err(e) = fs::rename(&source_path, &destination) {
+        if let Err(_) = fs::rename(&source_path, &destination) {
             eprintln!(
                 "mv: cannot stat '{}': No such file or directory",
                 source_str,
