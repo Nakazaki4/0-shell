@@ -29,6 +29,8 @@ fn main() {
             continue;
         }
 
+        let mut full_input = String::new();
+
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
             Ok(0) => {
@@ -37,7 +39,7 @@ fn main() {
             }
             Ok(_) => {
                 let trimmed_command = input.trim();
-                let tokenized_command = tokenize(trimmed_command); // tokenization
+                let tokenized_command = tokenize(trimmed_command);
                 let command_tree = parse(tokenized_command);
                 match execute(command_tree.unwrap()) {
                     Ok(_) => {}

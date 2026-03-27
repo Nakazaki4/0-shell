@@ -85,7 +85,7 @@ fn execute_simple_command(command: &String, args: &Vec<String>) -> Result<(), St
         // "ls" => list(),
         "mkdir" => make_directory(args),
         "mv" => movee(args),
-        // "pwd" => print_working_dir(),
+        "pwd" => print_working_dir(args),
         // "rm" => remove(),
         _ => {
             eprintln!("{}: Command not found", command);
