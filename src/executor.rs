@@ -17,7 +17,7 @@ use crate::builtins::ls::list;
 use crate::builtins::mkdir::make_directory;
 use crate::builtins::mv::movee;
 use crate::builtins::pwd::print_working_dir;
-use crate::builtins::rm::remove;
+// use crate::builtins::rm::remove;
 use crate::parser::{AstNode, Direction};
 
 pub fn execute(node: AstNode) -> Result<(), String> {
@@ -82,7 +82,7 @@ fn execute_simple_command(command: &String, args: &Vec<String>) -> Result<(), St
         "cp" => copy(args),
         "echo" => echo(args),
         "exit" => exit(args),
-        // "ls" => list(),
+        "ls" => Ok(list(args)),
         "mkdir" => make_directory(args),
         "mv" => movee(args),
         "pwd" => print_working_dir(args),
