@@ -3,6 +3,7 @@ use std::os::fd::AsRawFd;
 use nix::fcntl::{OFlag, open};
 use nix::libc::dup2;
 use nix::sys::stat::Mode;
+use nix::unistd::pipe;
 use nix::{
     sys::wait::waitpid,
     unistd::{ForkResult, close, fork},
@@ -69,8 +70,54 @@ pub fn execute(node: AstNode) -> Result<(), String> {
             }
         }
         AstNode::Pipe { left, right } => {
-            execute(*left)?;
-            execute(*right)
+            let (read_fd, write_fd) = pipe().map_err(|e| format!("Pipe failed: {}", e))?;
+            match unsafe { fork() } {
+                Ok(ForkResult::Child) => {
+                    let _ = close(read_fd.as_raw_fd());
+
+                    if unsafe { dup2(write_fd.as_raw_fd(), 1) } < 0 {
+                        eprintln!("Failed to redirect stdout to pipe");
+                        std::process::exit(1);
+                    }
+
+                    let _ = close(write_fd.as_raw_fd());
+
+                    if let Err(e) = execute(*left) {
+                        eprintln!("Error: {}", e);
+                        std::process::exit(1);
+                    }
+                    std::process::exit(0);
+                }
+                Ok(ForkResult::Parent { child: left_child }) => match unsafe { fork() } {
+                    Ok(ForkResult::Child) => {
+                        let _ = close(write_fd.as_raw_fd());
+
+                        if unsafe { dup2(read_fd.as_raw_fd(), 0) } < 0 {
+                            eprintln!("Failed to redirect stdin from pipe");
+                            std::process::exit(1);
+                        }
+
+                        let _ = close(read_fd.as_raw_fd());
+
+                        if let Err(e) = execute(*right) {
+                            eprintln!("Error: {}", e);
+                            std::process::exit(1);
+                        }
+                        std::process::exit(0);
+                    }
+                    Ok(ForkResult::Parent { child: right_child }) => {
+                        let _ = close(read_fd.as_raw_fd());
+                        let _ = close(write_fd.as_raw_fd());
+
+                        let _ = waitpid(left_child, None);
+                        let _ = waitpid(right_child, None);
+
+                        Ok(())
+                    }
+                    Err(e) => Err(format!("Fork failed for right side of pipe: {}", e)),
+                },
+                Err(e) => Err(format!("Fork failed for left side of pipe: {}", e)),
+            }
         }
     }
 }
