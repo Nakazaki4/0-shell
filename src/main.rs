@@ -6,8 +6,8 @@ mod parser;
 
 use lexer::tokenize;
 use parser::parse;
-use std::env;
 use std::io::{self, Read, Write};
+use std::{env, process};
 use termios::{ECHO, ICANON, TCSANOW, Termios, tcsetattr};
 
 use crate::executor::execute;
@@ -26,12 +26,24 @@ fn main() {
     let mut history: Vec<String> = Vec::new();
 
     loop {
-        if let Err(e) = print_prompt() {
-            eprintln!("\r\n{}", e);
-            break;
+        if let Ok(dir) = env::current_dir() {
+            unsafe { env::set_var("PWD", dir) }
         }
+        // 2. Fetch the prompt string first
+        let prompt = match get_prompt() {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("\r\n{}", e);
+                break;
+            }
+        };
 
-        let full_input = match read_command() {
+        // 3. Print the initial prompt
+        print!("{}", prompt);
+        io::stdout().flush().unwrap();
+
+        // 4. Pass BOTH the prompt and history to the reader
+        let full_input = match read_command(&prompt, &history) {
             Some(input) => input,
             None => break,
         };
@@ -51,30 +63,52 @@ fn main() {
         }
 
         let tokenized_command = tokenize(trimmed_command);
-        let command_tree = parse(tokenized_command);
 
-        match execute(command_tree.unwrap()) {
+        // 5. Safely handle parser errors without panicking
+        let command_tree = match parse(tokenized_command) {
+            Ok(tree) => tree,
+            Err(e) => {
+                eprintln!("{}\r", e); // Fixed double space bug
+                continue;
+            }
+        };
+
+        // 6. RAW MODE TOGGLE: Turn raw mode OFF before executing commands like `cat`
+        tcsetattr(0, TCSANOW, &original_config).unwrap();
+
+        match execute(command_tree) {
             Ok(_) => {}
-            Err(e) => eprintln!("\r\n{}", e),
+            Err(e) => eprintln!("{}", e), // Normal mode, so normal println is fine
         }
+
+        // 7. Turn raw mode BACK ON for the next prompt loop
+        switch_to_raw_mode();
     }
 
     tcsetattr(0, TCSANOW, &original_config).unwrap();
 }
 
-fn print_prompt() -> Result<(), String> {
-    let curr_dir =
-        env::current_dir().map_err(|e| format!("Failed to get current directory {}", e))?;
-    print!("{} $ ", curr_dir.display());
-    io::stdout()
-        .flush()
-        .map_err(|e| format!("Failed to flush stdout: {}", e))?;
-    Ok(())
+// Renamed to get_prompt so it returns the string instead of printing it directly
+fn get_prompt() -> Result<String, String> {
+    let display_path = match env::current_dir() {
+        Ok(path) => path.display().to_string(),
+        Err(_) => match env::var("PWD") {
+            Ok(path) => path,
+            Err(_) => {
+                return Err("cannot get the current working directory".to_string());
+            }
+        },
+    };
+
+    Ok(format!("{} $ ", display_path))
 }
 
-fn read_command() -> Option<String> {
+fn read_command(base_prompt: &str, history: &[String]) -> Option<String> {
     let mut full_input = String::new();
     let mut buffer = [0; 1];
+
+    let mut current_prompt = base_prompt.to_string();
+    let mut history_index = history.len(); // Start pointing at a new, empty command
 
     loop {
         io::stdin().read_exact(&mut buffer).unwrap();
@@ -87,7 +121,15 @@ fn read_command() -> Option<String> {
                 let slash_pos = full_input.rfind('\\').unwrap();
                 full_input.truncate(slash_pos);
 
-                print!("\r\n> ");
+                current_prompt = "> ".to_string();
+                print!("\r\n{}", current_prompt);
+                io::stdout().flush().unwrap();
+                continue;
+            // --- MULTI-LINE QUOTE LOGIC ---
+            } else if has_unclosed_double_quote(&full_input) {
+                full_input.push('\n');
+                current_prompt = "dquote> ".to_string();
+                print!("\r\n{}", current_prompt);
                 io::stdout().flush().unwrap();
                 continue;
             } else {
@@ -110,14 +152,35 @@ fn read_command() -> Option<String> {
             if buffer[0] == BRACKET {
                 io::stdin().read_exact(&mut buffer).unwrap();
                 if buffer[0] == UP {
-                    // TODO: history up
+                    // History UP: Move backwards in time
+                    if history_index > 0 {
+                        history_index -= 1;
+                        full_input = history[history_index].clone();
+
+                        // \x1b[2K clears the line. \r moves cursor to the far left.
+                        print!("\x1b[2K\r{}{}", current_prompt, full_input);
+                        io::stdout().flush().unwrap();
+                    }
                 } else if buffer[0] == DOWN {
-                    // TODO: history down
+                    // History DOWN: Move forwards in time
+                    if history_index < history.len() {
+                        history_index += 1;
+
+                        if history_index == history.len() {
+                            full_input.clear(); // Reached the bottom, clear the line
+                        } else {
+                            full_input = history[history_index].clone();
+                        }
+
+                        print!("\x1b[2K\r{}{}", current_prompt, full_input);
+                        io::stdout().flush().unwrap();
+                    }
                 }
             }
         } else if byte == TAB {
             // TODO: auto completion
-        } else {
+        } else if byte >= 32 {
+            // Ignore control characters to avoid ghost text!
             let c = byte as char;
             full_input.push(c);
             print!("{}", c);
@@ -135,4 +198,24 @@ fn switch_to_raw_mode() -> termios::Termios {
     tcsetattr(stdin_fd, TCSANOW, &termios).unwrap();
 
     original_config
+}
+
+fn has_unclosed_double_quote(input: &str) -> bool {
+    let mut in_quote = false;
+    let mut escaped = false;
+
+    for c in input.chars() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if c == '\\' {
+            escaped = true;
+            continue;
+        }
+        if c == '"' {
+            in_quote = !in_quote;
+        }
+    }
+    in_quote
 }

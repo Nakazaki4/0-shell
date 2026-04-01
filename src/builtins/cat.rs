@@ -24,14 +24,14 @@ pub fn concatenate(args: &Vec<String>) -> Result<(), String> {
                     // Return the error immediately if reading/writing fails
                     let err_msg = e.to_string();
                     let clean_err = err_msg.split(" (os error)").next().unwrap_or(&err_msg);
-                    return Err(format!("cat: {}: {}", filename, clean_err));
+                    eprintln!("cat: {}: {}", filename, clean_err);
                 }
             }
             Err(e) => {
                 // Return the error immediately if the file doesn't exist
                 let err_msg = e.to_string();
                 let clean_err = err_msg.split(" (os error)").next().unwrap_or(&err_msg);
-                return Err(format!("cat: {}: {}", filename, clean_err));
+                eprintln!("cat: {}: {}", filename, clean_err);
             }
         }
     }

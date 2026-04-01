@@ -31,39 +31,18 @@ pub enum AstNode {
 }
 
 pub fn parse(tokens: Vec<String>) -> Result<AstNode, String> {
+    if tokens.is_empty() {
+        return Err("bash: syntax error near unexpected token".to_string());
+    }
+
     if let Some(pos) = tokens
         .iter()
-        .position(|t| t == ";" || t == "|" || t == ">" || t == "<")
+        .position(|t| t == ";")
     {
-        let splitted = tokens.split_at(pos);
-        let left_tokens = splitted.0;
-        let right_tokens = splitted.1;
-
+        let left_tokens = &tokens[..pos];
+        let right_tokens = &tokens[pos + 1..];
         return match tokens[pos].as_str() {
             ";" => Ok(AstNode::Sequence {
-                left: Box::new(parse(left_tokens.to_vec())?),
-                right: Box::new(parse(right_tokens.to_vec())?),
-            }),
-            ">" => {
-                if right_tokens.len() < 2 {
-                    return Err("bash: syntax error near unexpected token `newline'".to_string());
-                }
-                Ok(AstNode::Redirect {
-                    command: Box::new(parse(left_tokens.to_vec())?),
-                    file: right_tokens[1].clone(),
-                    direction: Direction::Out,
-                })
-            }
-            "<" => {
-                if right_tokens.len() < 2 {
-                    return Err("bash: syntax error near unexpected token `newline'".to_string());
-                }
-                Ok(AstNode::Redirect {
-                command: Box::new(parse(left_tokens.to_vec())?),
-                file: right_tokens[1].clone(),
-                direction: Direction::In,
-            })},
-            "|" => Ok(AstNode::Pipe {
                 left: Box::new(parse(left_tokens.to_vec())?),
                 right: Box::new(parse(right_tokens.to_vec())?),
             }),
@@ -71,10 +50,8 @@ pub fn parse(tokens: Vec<String>) -> Result<AstNode, String> {
         };
     }
 
-    // in simple command case
-    let splitted = tokens.split_at(1);
-    let name = splitted.0.concat();
-    let args = splitted.1.to_vec();
+    let name = tokens[0].clone();
+    let args = tokens[1..].to_vec();
 
     Ok(AstNode::SimpleCommand { name, args })
 }
