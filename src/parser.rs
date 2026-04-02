@@ -1,10 +1,4 @@
 #[derive(Debug)]
-pub enum Direction {
-    In,  // <
-    Out, // >
-}
-
-#[derive(Debug)]
 pub enum AstNode {
     SimpleCommand {
         name: String,
@@ -15,19 +9,7 @@ pub enum AstNode {
     Sequence {
         left: Box<AstNode>,
         right: Box<AstNode>,
-    },
-
-    Pipe {
-        left: Box<AstNode>,
-        right: Box<AstNode>,
-    },
-
-    // > or <
-    Redirect {
-        command: Box<AstNode>,
-        file: String,
-        direction: Direction,
-    },
+    }
 }
 
 pub fn parse(tokens: Vec<String>) -> Result<AstNode, String> {

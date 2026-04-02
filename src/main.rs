@@ -7,7 +7,7 @@ mod parser;
 use lexer::tokenize;
 use parser::parse;
 use std::io::{self, Read, Write};
-use std::{env, process};
+use std::{env};
 use termios::{ECHO, ICANON, TCSANOW, Termios, tcsetattr};
 
 use crate::executor::execute;
@@ -29,7 +29,6 @@ fn main() {
         if let Ok(dir) = env::current_dir() {
             unsafe { env::set_var("PWD", dir) }
         }
-        // 2. Fetch the prompt string first
         let prompt = match get_prompt() {
             Ok(p) => p,
             Err(e) => {
@@ -38,11 +37,9 @@ fn main() {
             }
         };
 
-        // 3. Print the initial prompt
         print!("{}", prompt);
         io::stdout().flush().unwrap();
 
-        // 4. Pass BOTH the prompt and history to the reader
         let full_input = match read_command(&prompt, &history) {
             Some(input) => input,
             None => break,
@@ -64,7 +61,6 @@ fn main() {
 
         let tokenized_command = tokenize(trimmed_command);
 
-        // 5. Safely handle parser errors without panicking
         let command_tree = match parse(tokenized_command) {
             Ok(tree) => tree,
             Err(e) => {
@@ -81,7 +77,6 @@ fn main() {
             Err(e) => eprintln!("{}", e), // Normal mode, so normal println is fine
         }
 
-        // 7. Turn raw mode BACK ON for the next prompt loop
         switch_to_raw_mode();
     }
 
@@ -124,7 +119,6 @@ fn read_command(base_prompt: &str, history: &[String]) -> Option<String> {
                 print!("\r\n{}", current_prompt);
                 io::stdout().flush().unwrap();
                 continue;
-            // --- MULTI-LINE QUOTE LOGIC ---
             } else if has_unclosed_double_quote(&full_input) {
                 full_input.push('\n');
                 current_prompt = "dquote> ".to_string();

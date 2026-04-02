@@ -9,7 +9,7 @@ pub fn copy(args: &Vec<String>) -> Result<(), String> {
     let mut target_str = args.last().cloned().unwrap();
     if target_str.starts_with('~') {
         let home = env::var("HOME").map_err(|_| "cd: HOME not set".to_string())?;
-        target_str = format!("{}/{}", home, &target_str[1..]);
+        target_str = format!("{}{}", home, &target_str[1..]);
     }
 
     let target_path = Path::new(&target_str);

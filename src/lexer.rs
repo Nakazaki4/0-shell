@@ -30,7 +30,7 @@ pub fn tokenize(command: &str) -> Vec<String> {
             }
             continue;
         }
-        if c == '|' || c == '>' || c == '<' || c == ';' {
+        if c == ';' {
             if !token.is_empty() {
                 tokens_vec.push(token.clone());
                 token.clear();
