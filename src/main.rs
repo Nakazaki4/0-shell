@@ -88,7 +88,6 @@ fn main() {
     tcsetattr(0, TCSANOW, &original_config).unwrap();
 }
 
-// Renamed to get_prompt so it returns the string instead of printing it directly
 fn get_prompt() -> Result<String, String> {
     let display_path = match env::current_dir() {
         Ok(path) => path.display().to_string(),
@@ -108,7 +107,7 @@ fn read_command(base_prompt: &str, history: &[String]) -> Option<String> {
     let mut buffer = [0; 1];
 
     let mut current_prompt = base_prompt.to_string();
-    let mut history_index = history.len(); // Start pointing at a new, empty command
+    let mut history_index = history.len();
 
     loop {
         io::stdin().read_exact(&mut buffer).unwrap();
@@ -152,17 +151,14 @@ fn read_command(base_prompt: &str, history: &[String]) -> Option<String> {
             if buffer[0] == BRACKET {
                 io::stdin().read_exact(&mut buffer).unwrap();
                 if buffer[0] == UP {
-                    // History UP: Move backwards in time
                     if history_index > 0 {
                         history_index -= 1;
                         full_input = history[history_index].clone();
 
-                        // \x1b[2K clears the line. \r moves cursor to the far left.
                         print!("\x1b[2K\r{}{}", current_prompt, full_input);
                         io::stdout().flush().unwrap();
                     }
                 } else if buffer[0] == DOWN {
-                    // History DOWN: Move forwards in time
                     if history_index < history.len() {
                         history_index += 1;
 
@@ -180,7 +176,6 @@ fn read_command(base_prompt: &str, history: &[String]) -> Option<String> {
         } else if byte == TAB {
             // TODO: auto completion
         } else if byte >= 32 {
-            // Ignore control characters to avoid ghost text!
             let c = byte as char;
             full_input.push(c);
             print!("{}", c);
