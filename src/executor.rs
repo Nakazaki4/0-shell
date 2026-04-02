@@ -129,11 +129,11 @@ fn execute_simple_command(command: &String, args: &Vec<String>) -> Result<(), St
         "cp" => copy(args),
         "echo" => echo(args),
         "exit" => exit(args),
-        // "ls" => list(),
+        "ls" => Ok(list(args)),
         "mkdir" => make_directory(args),
         "mv" => movee(args),
         "pwd" => print_working_dir(args),
-        // "rm" => remove(),
+        "rm" => Ok(remove(args)),
         _ => {
             eprintln!("{}: Command not found", command);
             Ok(())
