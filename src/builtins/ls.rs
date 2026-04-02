@@ -326,6 +326,8 @@ fn get_permissions(metadata: &fs::Metadata, path: &Path) -> String {
             let result = libc::listxattr(path_cstring.as_ptr(), std::ptr::null_mut(), 0);
             if result > 0 {
                 perms.push('+');
+            } else {
+                perms.push(' ');
             }
         }
     }
